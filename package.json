@@ -1,0 +1,17 @@
+{
+  "name": "aniics-skill",
+  "version": "1.0.0",
+  "private": false,
+  "license": "MIT",
+  "description": "Public ANIICS agent skill package",
+  "keywords": [
+    "pi-package",
+    "agent-skill",
+    "aniics"
+  ],
+  "pi": {
+    "skills": [
+      "./skills/aniics"
+    ]
+  }
+}
