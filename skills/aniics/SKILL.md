@@ -30,7 +30,7 @@ Use this skill when the task is specifically about the ANIICS analytics service 
 ## Working Rules
 
 1. Preserve the current service shape unless the user explicitly wants an architecture change.
-2. Treat Analytics Engine's single-index and 20-blob limits as hard design inputs. Only this layout is stored. `blob19` is `local|device|language|browser|surface`. Read a segment with `substring` and `position`. Do not store raw viewport or userAgent.
+2. Treat Analytics Engine's single-index and 20-blob limits as hard design inputs. Only this layout is stored. `blob19` is `local|device|language|browser|surface`. The dashboard groups the whole blob and splits segments in the worker. Nested `substring` SQL can fail the SQL API. Do not store raw viewport or userAgent.
 
    | Slot   | Field       | Slot   | Field                                       |
    | ------ | ----------- | ------ | ------------------------------------------- |
