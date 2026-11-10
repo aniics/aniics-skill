@@ -4,7 +4,7 @@ description: Guidance for integrating, operating, and extending the ANIICS Cloud
 license: MIT
 metadata:
   author: eltonstewart
-  version: '1.1.0'
+  version: '1.2.0'
 ---
 
 # ANIICS
@@ -30,7 +30,24 @@ Use this skill when the task is specifically about the ANIICS analytics service 
 ## Working Rules
 
 1. Preserve the current service shape unless the user explicitly wants an architecture change.
-2. Treat Analytics Engine's single-index and 20-blob limits as hard design inputs. The event schema accepts more fields than it persists; only the documented blob1–blob20 layout is stored.
+2. Treat Analytics Engine's single-index and 20-blob limits as hard design inputs. Only this layout is stored. `blob19` is `local|device|language|browser|surface`. Read a segment with `substring` and `position`. Do not store raw viewport or userAgent.
+
+   | Slot   | Field       | Slot   | Field                                       |
+   | ------ | ----------- | ------ | ------------------------------------------- |
+   | index  | `appId`     | blob11 | `section`                                   |
+   | blob1  | `event`     | blob12 | `ctaId`                                     |
+   | blob2  | `timezone`  | blob13 | `term`                                      |
+   | blob3  | `pathname`  | blob14 | `content`                                   |
+   | blob4  | `sessionId` | blob15 | `interaction`                               |
+   | blob5  | `userId`    | blob16 | `target`                                    |
+   | blob6  | `variant`   | blob17 | `targetId`                                  |
+   | blob7  | `source`    | blob18 | `action`                                    |
+   | blob8  | `medium`    | blob19 | `local\|device\|language\|browser\|surface` |
+   | blob9  | `campaign`  | blob20 | `href`                                      |
+   | blob10 | `referrer`  |        |                                             |
+
+   `device` is `mobile` under 768px, `tablet` under 1024px, otherwise `desktop`. `browser` is `chrome`, `safari`, `firefox`, `edge`, `opera`, `samsung`, or `other`. Empty segments stay empty. A `|` in a value is stored as `/`.
+
 3. Keep ingestion hardened: strict validation, bounded fields, fail-closed behavior, signed sender verification, event allowlists, and explicit public exceptions only.
 4. Prefer changes that keep client integration simple and server secrets server-side.
 5. Do not put ANIICS signing secrets in browser code or public bundles.
@@ -76,10 +93,10 @@ Use this skill when the task is specifically about the ANIICS analytics service 
 - Start with the public integration docs or client helper if one exists.
 - For a public marketing site, prefer the one-tag collector: `<script src="https://aniics.fyi/aniics.js" data-app-id="…" defer></script>` — auto page views (including SPA history navigations), one engagement event per page, and delegated clicks (downloads, outbound links, `data-cta` elements). It sends `text/plain` beacons (no CORS preflight) and holds no secrets. Mark CTAs with `data-cta="id"` plus optional `data-cta-action`, sections with `data-section`.
 - For low-value browser analytics beyond the tag, confirm the app is in `ANALYTICS_UNSIGNED_PUBLIC_APP_IDS` and its events are in `ANALYTICS_PUBLIC_EVENT_NAMES`.
-- Model behavioral analytics with `event`, `interaction`, `target`, `targetId`, `action`, `affected`, and `surface`, plus `pathname`.
-- `term`, `content`, `context`, `viewport`, `screen`, `language`, `timezone`, `userAgent`, and `properties` are accepted but NOT persisted (Analytics Engine caps data points at 20 blobs). Do not build behaviour on them and do not send them.
-- Capture traffic origin with allowlisted query params (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `ref`, and common click ids) plus the landing referrer. Keep those values for the session; replace them when a later URL has new marketing params. Never store the raw query string.
-- Model origin with `source`, `medium`, `campaign`, and `referrer` (persisted). `term`/`content` are accepted but not persisted.
+- Model behavior with stored columns: `event`, `pathname`, `section`, `ctaId`, `interaction`, `target`, `targetId`, `action`, and `href`. Put the flow in `context` and the UI region in `surface`. Those two are segments of blob19, not their own columns.
+- `environment`, `label`, `affected`, `screen`, and `properties` are accepted and not stored. Raw viewport and userAgent are accepted only to derive `device` and `browser`. Use a separate `appId` per environment. Do not build charts on `properties`.
+- Capture traffic origin with allowlisted query params (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `ref`, and common click ids) plus the landing referrer. Keep those values for the session; replace them when a later URL has new marketing params. Never store the raw query string. Click ids are not stored.
+- Model origin with `source`, `medium`, `campaign`, `term`, `content`, and `referrer`. Language, device, and browser are segments of blob19.
 - For sensitive analytics, route browser events to the app's own backend endpoint, then forward to ANIICS with signed headers.
 - Use `client/aniics-server.ts` as the server-side signing helper when appropriate.
 - Confirm the app sends `appId` and `event`, with optional fields that already map cleanly into the current event schema.
